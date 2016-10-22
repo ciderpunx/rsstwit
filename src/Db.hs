@@ -10,12 +10,19 @@
 
 module Db where
 
+import Control.Monad.Reader (ReaderT)
+import Control.Monad.Logger (NoLoggingT)
+import Control.Monad.Trans.Resource.Internal (ResourceT)
 import Database.Persist
 import Database.Persist.TH
 import Database.Persist.Sqlite
 import Control.Monad.IO.Class (liftIO)
 import Data.Time
+import Data.Time.Format
 import qualified Data.Text as T
+import FetchFeed
+
+dbname = ":memory:" -- "app/rsstwit.sqlite3"
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll", mkSave "entityDefs"] [persistLowerCase|
 Feed
@@ -31,47 +38,86 @@ Entry
     feedId FeedId
     title T.Text
     link T.Text
-    pubDate UTCTime
     retrieved UTCTime
     tweeted Bool
     deriving Show
 |]
 
+doMigrations :: SqlPersistM ()
+doMigrations =
+    runMigration migrateAll
+
+feedsToUpdate :: SqlPersistM [Entity Feed]
 feedsToUpdate = do
     now <- liftIO getCurrentTime
-    fs <- selectList [FeedNextCheck <=. now] []
-    return $ map entityVal fs
+    selectList [FeedNextCheck <=. now] []
 
-doMigrations =
-    runMigration $ migrate entityDefs $ entityDef (Nothing :: Maybe Feed)
+createFeed :: Feed -> IO (Key Feed)
+createFeed f = runSqlite dbname $ do 
+    doMigrations
+    insert f
 
--- createFeed (Feed ...) - create new feed, Should be able to touch from CLI
+-- Given a feed entity, fetch its entries, fetch the feed, compare the first maxEntries feed entries with
+-- the db entries adding any unseen ones to the database
+-- Assumptions: The feed is in reverse chronological order.
+--              Links are used for comparison rather than ids which are often
+--              absent from feeds in the wild.
+updateFeed f = do
+    dbentries <- entriesForFeed f
+    let dblinks = map (entryLink . entityVal) dbentries
+    postables <- liftIO $ fetchFeed (feedUri (entityVal f))
+    let toAdds = filter (\p -> link p `notElem` dblinks) postables
+        fk = entityKey f
+        fv = entityVal f
+    _ <- update fk [FeedNextCheck =. addUTCTime (realToFrac $ feedCheckEvery fv) (feedNextCheck fv)]
+    return $ if null toAdds
+             then []
+             else map (createEntry f) toAdds
 
--- updateFeed
---   -- get entries from db
---   -- if more than 0
---   --    -- They need tweeting (Twitter.tweetEntry)
---   -- otherwise
---   --    -- Get the feed from the internet (FetchFeed.fetchFeed)
---   --    -- add any new entries (insertEntries)
---   --    -- tweet feed.tweetsPerRun entries (and mark as tweeted)
+-- Given a feed and a postable, insert a new Entry, with 0 tweeted, feed id set
+-- the link, title and pubDate from the postable, retrieved set to now
+createEntry :: Entity Feed -> Postable -> SqlPersistM (Key Entry)
+createEntry f p = do
+    now <- liftIO getCurrentTime
+    insert $ Entry (entityKey f) -- entryFeedId
+                   (title p)     -- entryTitle
+                   (link p)      -- entryLink
+                   now           -- entryRetrieved
+                   False         -- entryTweeted
 
--- updateFeeds
+entriesForFeed :: Entity Feed -> SqlPersistM [Entity Entry]
+entriesForFeed f =
+    selectList [ EntryFeedId ==. entityKey f
+               , EntryTweeted ==. False
+               ]
+               [ Asc EntryRetrieved
+               ]
 
--- createEntries  = map createEntry
-
--- createEntry (Entry ...) - create new entry
+tweetableEntries :: Entity Feed -> SqlPersistM [Entity Entry]
+tweetableEntries f =
+    selectList [ EntryFeedId ==. entityKey f
+               , EntryTweeted ==. False
+               ]
+               [ Asc EntryRetrieved
+               , LimitTo (feedTweetsPerRun (entityVal f))
+               ]
 
 -- This should be somewhere else!
 main :: IO ()
-main = runSqlite ":memory:" $ do
+main = runSqlite dbname $ do
     doMigrations
-    fid <- insert $ Feed "http://charlieharvey.org.uk/page/feed/rss" 
-                         "Charlie RSS"
-                         ""
-                         " #charlieharvey"
-                         1
-                         30
-                         (UTCTime (fromGregorian 2016 10 20) 1200)
+    fid <- insert egFeed
     feeds <- feedsToUpdate
     liftIO $ print feeds
+
+-- can be used for testing
+egFeed :: Feed
+egFeed =
+    Feed "http://charlieharvey.org.uk/page/feed/rss" 
+         "Charlie's RSS"
+         ""
+         " #charlieharvey"
+         1
+         30
+         (UTCTime (fromGregorian 2016 10 20) 1200)
+

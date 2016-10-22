@@ -17,13 +17,17 @@ library
   hs-source-dirs:      src
   exposed-modules:     Lib
   build-depends:       base >= 4.7 && < 5
+                     , extra
                      , http-conduit
-                     , xml-conduit
+                     , monad-logger
+                     , mtl
                      , persistent
                      , persistent-sqlite
                      , persistent-template
+                     , resourcet
                      , time
                      , text
+                     , xml-conduit
   default-language:    Haskell2010
 
 executable rsstwit-exe
