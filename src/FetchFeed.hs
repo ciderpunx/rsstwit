@@ -6,16 +6,18 @@ import Text.XML
 import Text.XML.Cursor
 import qualified Data.Text as T
 
+-- Only title and link are used in the database.
 data Postable = Postable { title :: T.Text
                          , link :: T.Text
                          , description :: T.Text
-                         , pubDate :: T.Text } deriving (Show)
+                         , pubDate :: T.Text
+                         } deriving (Show)
 
-type URI = String
+type URI = T.Text
 
 fetchFeed :: URI -> IO [Postable]
 fetchFeed uri = do
-    src <- simpleHttp uri
+    src <- simpleHttp (T.unpack uri)
     let doc    = parseLBS_ def src
         cursor = fromDocument doc
         rss    =  cursor $.// laxElement "rss"
