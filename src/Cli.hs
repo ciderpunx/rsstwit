@@ -4,6 +4,7 @@ module Cli where
 
 import Control.Monad.Extra (concatMapM)
 import Control.Monad (unless)
+import Control.Monad.IO.Class (liftIO)
 import Text.Read (readMaybe)
 import qualified Data.Text as T
 import Data.Time (UTCTime, getCurrentTime)
@@ -17,8 +18,8 @@ import FetchFeed
 
 cronRun :: IO [Entity Entry]
 cronRun = runSqlite dbname $ do
-    doMigrations
     fsToUpdate <- feedsToUpdate
+    liftIO $ print fsToUpdate
     mapM_ updateFeed fsToUpdate
     concatMapM tweetableEntries fsToUpdate
 

@@ -11,6 +11,7 @@
 module Db where
 
 import Control.Monad.Reader (ReaderT)
+import Control.Monad.Extra (concatMapM)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Resource.Internal (ResourceT)
 import Database.Persist
@@ -22,7 +23,9 @@ import Data.Time.Format
 import qualified Data.Text as T
 import FetchFeed
 
-dbname = ":memory:" -- "app/rsstwit.sqlite3"
+dbname = "test/mock.sqlite3"
+         -- ":memory:"
+         -- "app/rsstwit.sqlite3"
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll", mkSave "entityDefs"] [persistLowerCase|
 Feed
@@ -33,6 +36,7 @@ Feed
     tweetsPerRun Int
     checkEvery Int
     nextCheck UTCTime
+    UniqueURI uri
     deriving Show
 Entry
     feedId FeedId
@@ -47,13 +51,41 @@ doMigrations :: SqlPersistM ()
 doMigrations =
     runMigration migrateAll
 
+allFeeds :: SqlPersistM [Entity Feed]
+allFeeds =
+    selectList [] []
+
+-- This should be somewhere else!
+main :: IO ()
+main = runSqlite dbname $ do
+    doMigrations
+    fid <- insert egFeed
+    feeds <- feedsToUpdate
+    liftIO $ print feeds
+
+listFeeds :: IO ()
+listFeeds = runSqlite dbname $ do
+    fs <- allFeeds
+    mapM_ listFeed fs
+  where
+    listFeed f = do
+      let fv = entityVal f
+          fk = entityKey f
+      liftIO . putStrLn $ show (fromSqlKey fk)
+                       ++ ": "
+                       ++ (take 25 . T.unpack $ feedTitle fv)
+                       ++ " ("
+                       ++ (take 50 . T.unpack $ feedUri fv)
+                       ++ ") Next check: "
+                       ++ show (feedNextCheck fv)
+
 feedsToUpdate :: SqlPersistM [Entity Feed]
 feedsToUpdate = do
     now <- liftIO getCurrentTime
     selectList [FeedNextCheck <=. now] []
 
 createFeed :: Feed -> IO (Key Feed)
-createFeed f = runSqlite dbname $ do 
+createFeed f = runSqlite dbname $ do
     doMigrations
     insert f
 
@@ -62,6 +94,7 @@ createFeed f = runSqlite dbname $ do
 -- Assumptions: The feed is in reverse chronological order.
 --              Links are used for comparison rather than ids which are often
 --              absent from feeds in the wild.
+updateFeed :: Entity Feed -> SqlPersistM [Key Entry]
 updateFeed f = do
     dbentries <- entriesForFeed f
     let dblinks = map (entryLink . entityVal) dbentries
@@ -69,21 +102,19 @@ updateFeed f = do
     let toAdds = filter (\p -> link p `notElem` dblinks) postables
         fk = entityKey f
         fv = entityVal f
-    _ <- update fk [FeedNextCheck =. addUTCTime (realToFrac $ feedCheckEvery fv) (feedNextCheck fv)]
-    return $ if null toAdds
-             then []
-             else map (createEntry f) toAdds
+    now <- liftIO getCurrentTime
+    _ <- update fk [FeedNextCheck =. addUTCTime (realToFrac $ feedCheckEvery fv) now]
+    mapM (createEntry f) toAdds
 
 -- Given a feed and a postable, insert a new Entry, with 0 tweeted, feed id set
 -- the link, title and pubDate from the postable, retrieved set to now
-createEntry :: Entity Feed -> Postable -> SqlPersistM (Key Entry)
 createEntry f p = do
     now <- liftIO getCurrentTime
     insert $ Entry (entityKey f) -- entryFeedId
-                   (title p)     -- entryTitle
-                   (link p)      -- entryLink
-                   now           -- entryRetrieved
-                   False         -- entryTweeted
+                          (title p)     -- entryTitle
+                          (link p)      -- entryLink
+                          now           -- entryRetrieved
+                          False         -- entryTweeted
 
 entriesForFeed :: Entity Feed -> SqlPersistM [Entity Entry]
 entriesForFeed f =
@@ -102,14 +133,6 @@ tweetableEntries f =
                , LimitTo (feedTweetsPerRun (entityVal f))
                ]
 
--- This should be somewhere else!
-main :: IO ()
-main = runSqlite dbname $ do
-    doMigrations
-    fid <- insert egFeed
-    feeds <- feedsToUpdate
-    liftIO $ print feeds
-
 -- can be used for testing
 egFeed :: Feed
 egFeed =
@@ -120,4 +143,3 @@ egFeed =
          1
          30
          (UTCTime (fromGregorian 2016 10 20) 1200)
-
