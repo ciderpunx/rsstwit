@@ -3,7 +3,7 @@ version:             0.1.0.0
 synopsis:            Grab RSS feeds from the interweb and tweet their content, a-la TwitterFeed (soon to be RIP)
 description:         Please see README.md
 homepage:            https://github.com/ciderpunx/rsstwit
-license:             GPL2
+license:             GPL3
 license-file:        LICENSE
 author:              Charlie Harvey
 maintainer:          https://charlieharvey.org.uk/contact
