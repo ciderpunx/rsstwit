@@ -13,15 +13,17 @@ import Database.Persist.Sqlite
 import Db
 import FetchFeed
 
--- TODO: listFeeds, deleteFeed
+-- TODO: deleteFeed
 -- ? showFeed
 
-cronRun :: IO [Entity Entry]
+cronRun :: IO ()
 cronRun = runSqlite dbname $ do
     fsToUpdate <- feedsToUpdate
-    liftIO $ print fsToUpdate
     mapM_ updateFeed fsToUpdate
-    concatMapM tweetableEntries fsToUpdate
+    ts <- concatMapM tweetables fsToUpdate
+    -- Here we do our tweeting and update db if tweets were sent
+    liftIO $  print ts
+    return ()
 
 addFeed :: IO ()
 addFeed = do
@@ -65,5 +67,3 @@ getIntLine m min max = do
                 else do putStrLn $ "Error: Must be between " ++ show min ++ " and " ++ show max
                         getIntLine m min max
       Nothing -> getIntLine m min max
-
---add is just createFeed f with a nextUpdate time of now
