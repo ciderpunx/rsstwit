@@ -26,9 +26,9 @@ import FetchFeed
 
 -- TODO: deleteFeed
 -- todo external config file for these!
-dbname = "test/mock.sqlite3"
+dbname = "/tmp/rsstwit.sqlite3"
+         -- "test/mock.sqlite3"
          -- ":memory:"
-         -- "app/rsstwit.sqlite3"
 maxEntries = 10
 shortUrlLength = 24 -- short url plus space!
 
@@ -55,6 +55,11 @@ Entry
     tweeted Bool
     deriving Show
 |]
+
+--initDb :: IO ()
+initDb = runSqlite dbname $ do
+    _ <- doMigrations
+    liftIO $ putStrLn "Initialized database"
 
 allFeeds :: SqlPersistM [Entity Feed]
 allFeeds =
