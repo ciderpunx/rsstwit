@@ -21,7 +21,7 @@ cronRun = runSqlite dbname $ do
     fsToUpdate <- feedsToUpdate
     mapM_ updateFeed fsToUpdate
     ts <- concatMapM tweetables fsToUpdate
-    -- Here we do our tweeting and update db if tweets were sent
+    -- Here we do our tweeting and update db for tweets that were sent
     liftIO $  print ts
     return ()
 
