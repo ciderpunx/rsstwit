@@ -20,21 +20,21 @@ You set up a new app at [https://apps.twitter.com/](https://apps.twitter.com/). 
 
 You will need to create a file called src/TwitterCredsPrivate.hs containing this code -- proper config file coming soon, I promise. 
 
-  import Web.Twitter.Conduit
-
-  tokens :: OAuth
-  tokens = twitterOAuth
-      { oauthConsumerKey    = "YOUR_CONSUMER_KEY"
-      , oauthConsumerSecret = "YOUR_CONSUMER_SECRET"
-      }
-
-  credential :: Credential
-  credential = Credential
-      [ ("oauth_token",        "YOUR_OAUTH_TOKEN")
-      , ("oauth_token_secret", "YOUR_OAUTH_SECRET")
-      ]
-
-  twInfo = setCredential tokens credential def
+    import Web.Twitter.Conduit
+    
+    tokens :: OAuth
+    tokens = twitterOAuth
+       { oauthConsumerKey    = "YOUR_CONSUMER_KEY"
+       , oauthConsumerSecret = "YOUR_CONSUMER_SECRET"
+       }
+    
+    credential :: Credential
+    credential = Credential
+       [ ("oauth_token",        "YOUR_OAUTH_TOKEN")
+       , ("oauth_token_secret", "YOUR_OAUTH_SECRET")
+       ]
+    
+    twInfo = setCredential tokens credential def
 
 By default rsstwit stores its database at /tmp/rsstwit.sqlite3. You can change that in src/Db.hs to somewhere more sensible.
 
@@ -83,7 +83,7 @@ And you will be asked the following before your feed is added to your database:
 
     Feed URL: http://charlieharvey.com/page/feed/rss
 
-URL of feed -- should be RSS, atom will probably work but is less tested
+URL of feed -- should be RSS, atom will probably work but is less tested  
 BEWARE you can enter invalid URLs here
 
     Feed name: Charlie's blog
