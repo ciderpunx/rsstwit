@@ -3,30 +3,53 @@ module Cli where
 -- Here we deal with command line interaction and running as a cron job
 
 import Control.Monad.Extra (concatMapM)
-import Control.Monad (unless)
+import Control.Monad (unless,join, filterM)
 import Control.Monad.IO.Class (liftIO)
 import Text.Read (readMaybe)
 import qualified Data.Text as T
 import Data.Time (UTCTime, getCurrentTime)
+import Data.Int (Int64)
 import Database.Persist
 import Database.Persist.Sqlite
+import Options.Applicative
+import System.IO
+
 import Db
 import FetchFeed
+import Twitter
 
--- TODO: deleteFeed
--- ? showFeed
+opts :: Parser (IO ())
+opts = subparser
+    ( command "delete" (info (delFeed <$> argument str idm) idm)
+   <> command "add"    (info (pure addFeed) idm)
+   <> command "list"   (info (pure listFeeds) idm)
+   <> command "cron"   (info (pure cronRun) idm)
+    )
+
+main :: IO ()
+main = join $ execParser (info opts idm)
+
+delFeed :: String -> IO ()
+delFeed n =
+    deleteFeed $ toSqlKey (read n :: Int64)
 
 cronRun :: IO ()
 cronRun = runSqlite dbname $ do
     fsToUpdate <- feedsToUpdate
     mapM_ updateFeed fsToUpdate
-    ts <- concatMapM tweetables fsToUpdate
-    -- Here we do our tweeting and update db for tweets that were sent
-    liftIO $  print ts
-    return ()
+    toTweets <- concatMapM tweetables fsToUpdate
+    sentTweets <- filterM (liftIO . sendTweet) toTweets
+    mapM_ (wasTweeted . fst) sentTweets
+  where
+    sendTweet t = do
+        tweet <- tweetText (snd t)
+        case tweet of
+          Nothing -> return False
+          Just _  -> return True
 
 addFeed :: IO ()
 addFeed = do
+    hSetBuffering stdout NoBuffering
     putStr "Feed URL: "
     uri <- getLine
     putStr "Feed name: "
@@ -38,7 +61,7 @@ addFeed = do
     a <- getLine
     let append = take (20 - length prepend) a
     tweetsPerRun <- getIntLine "Tweets per run (1-5): " 1 5
-    checkEvery <- getIntLine "Check every n minutes (5 and above)" 5 9999999
+    checkEvery <- getIntLine "Check every n minutes (5 and above): " 5 9999999
     putStr "OK? (Y for yes anything else for no): "
     ok <- getLine
     now <- getCurrentTime

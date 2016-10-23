@@ -23,10 +23,14 @@ import Data.Time.Format
 import qualified Data.Text as T
 import FetchFeed
 
+
+-- TODO: deleteFeed
+-- todo external config file for these!
 dbname = "test/mock.sqlite3"
          -- ":memory:"
          -- "app/rsstwit.sqlite3"
 maxEntries = 10
+shortUrlLength = 24 -- short url plus space!
 
 share [ mkPersist sqlSettings
       , mkMigrate "migrateAll"
@@ -80,9 +84,14 @@ feedsToUpdate = do
     selectList [FeedNextCheck <=. now] []
 
 createFeed :: Feed -> IO (Key Feed)
-createFeed f = runSqlite dbname $ do
-    doMigrations
-    insert f
+createFeed f =
+    runSqlite dbname (insert f :: SqlPersistM (Key Feed))
+
+deleteFeed :: Key Feed -> IO ()
+deleteFeed fid = runSqlite dbname $ do
+    delete fid::SqlPersistM ()
+    deleteWhere [EntryFeedId  ==. fid ] :: SqlPersistM ()
+    return ()
 
 -- Given a feed entity, fetch its entries, fetch the feed,
 -- compare the first maxEntries feed entries with the db entries
@@ -115,6 +124,8 @@ createEntry f p = do
                    now           -- entryRetrieved
                    False         -- entryTweeted
 
+wasTweeted ek = update ek [EntryTweeted =. True]
+
 entriesForFeed :: Entity Feed -> SqlPersistM [Entity Entry]
 entriesForFeed f =
     selectList [ EntryFeedId ==. entityKey f
@@ -132,7 +143,7 @@ tweetables f = do
         preS = if T.null pre then T.empty else pre +++ " "
         post = feedAppend fv
         sPost= if T.null post then T.empty else " " +++ post
-        tl   = 140 - (T.length pre + T.length post + 2)
+        tl   = 140 - shortUrlLength - (T.length preS + T.length sPost)
     es <- selectList [ EntryFeedId ==. fk
                      , EntryTweeted ==. False
                      ]
@@ -141,8 +152,10 @@ tweetables f = do
                      ]
     return $
       map (\e -> ( entityKey e
-                 , preS +++ T.take tl (entryTitle $ entityVal e)
-                        +++ sPost +++ post
+                 , preS +++ entryLink (entityVal e)
+                        +++ " "
+                        +++ T.take tl (entryTitle $ entityVal e)
+                        +++ sPost
                  )
           ) es
   where
