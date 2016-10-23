@@ -24,6 +24,7 @@ opts = subparser
    <> command "add"    (info (pure addFeed) idm)
    <> command "list"   (info (pure listFeeds) idm)
    <> command "cron"   (info (pure cronRun) idm)
+   <> command "init"   (info (pure initDb) idm)
     )
 
 main :: IO ()
@@ -57,7 +58,7 @@ addFeed = do
     putStr "Prepend to tweets (up to 10 chars): "
     p <- getLine
     let prepend = take 10 p
-    putStr "Prepend to tweets (up to 20 chars - length of prepend): "
+    putStr "Append to tweets (up to 20 chars - length of prepend): "
     a <- getLine
     let append = take (20 - length prepend) a
     tweetsPerRun <- getIntLine "Tweets per run (1-5): " 1 5
