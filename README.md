@@ -42,7 +42,7 @@ Next, you will want a working install of [stack](https://docs.haskellstack.org/e
 
 Once you have stack up and running you can clone this repo:
 
-    [TODO]
+    git clone https://github.com/ciderpunx/rsstwit.git
 
 Then do:
 
