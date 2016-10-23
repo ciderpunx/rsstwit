@@ -5,29 +5,30 @@ module Twitter where
 import Prelude hiding (map)
 import Web.Twitter.Conduit
 import Web.Twitter.Types.Lens
-import Data.Conduit
-import qualified Data.Conduit.List as CL
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
-import Control.Monad.IO.Class
 import Control.Lens
-import Data.Maybe (fromMaybe)
+import Control.Exception as X
 
 --  TODO load API deets from a config file
 import TwitterCredsPrivate
 
--- test function, get timeline
-getHomeTimeLine :: IO ()
-getHomeTimeLine = do
-    mgr <- newManager tlsManagerSettings
-    timeline <- call twInfo mgr homeTimeline
-    mapM_ (\s -> liftIO . print $ s ^. statusText) timeline
+-- Takes a T.Text and returns Just that text if tweeted, 
+-- Nothing otherwise
+tweetText :: T.Text -> IO (Maybe T.Text)
+tweetText t =
+    tt t `X.catch` eHandler
+  where
+    tt text = do
+      mgr <- newManager tlsManagerSettings
+      res <- call twInfo mgr $ update text
+      return $ res ^? statusText
 
--- Todo: make twitter work
+eHandler :: TwitterError -> IO (Maybe T.Text)
+eHandler e = return Nothing
 
--- takes a T.Text and returns Just that text if tweeted and Nothing if not
-tweetText :: T.Text -> IO ()
-tweetText text = do
-    mgr <- newManager tlsManagerSettings
-    res <- call twInfo mgr $ update text  -- add exception catch here
-    return ()
+---- test function, get timeline
+--getHomeTimeLine :: IO ()
+--getHomeTimeLine = do
+--    mgr <- newManager tlsManagerSettings
+--    timeline <- call twInfo mgr homeTimeline
+--    mapM_ (\s -> liftIO . print $ s ^. statusText) timeline
