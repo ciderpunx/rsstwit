@@ -19,7 +19,8 @@ type URI = T.Text
 
 fetchFeed :: URI -> IO (Maybe [Postable])
 fetchFeed uri = do
-    src <- simpleHttp (T.unpack uri) `X.catch` eHandler
+    let u = T.unpack $ T.strip uri
+    src <- simpleHttp u `X.catch` fetchHandler
     if src == L.empty
     then return Nothing
     else do
@@ -31,8 +32,9 @@ fetchFeed uri = do
             then map atomToPostable (cursor $// laxElement "entry")
             else map rssToPostable (cursor $// laxElement "item")
 
-eHandler :: HttpException -> IO L.ByteString
-eHandler e = putStrLn "Error occurred during download" >> return L.empty
+fetchHandler :: HttpException -> IO L.ByteString
+fetchHandler e =
+    putStrLn "Error occurred during download" >> print e >> return L.empty
 
 atomToPostable :: Cursor -> Postable
 atomToPostable entry =
