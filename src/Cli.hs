@@ -2,9 +2,11 @@ module Cli where
 
 -- Here we deal with command line interaction and running as a cron job
 
+import Network.HTTP.Conduit (parseRequest, Request (..), HttpException (..) )
 import Control.Monad.Extra (concatMapM)
 import Control.Monad (unless,join, filterM)
 import Control.Monad.IO.Class (liftIO)
+import qualified Control.Exception as X
 import Text.Read (readMaybe)
 import qualified Data.Text as T
 import Data.Time (UTCTime, getCurrentTime)
@@ -51,18 +53,12 @@ cronRun = runSqlite dbname $ do
 addFeed :: IO ()
 addFeed = do
     hSetBuffering stdout NoBuffering
-    putStr "Feed URL: "
-    uri <- getLine
-    putStr "Feed name: "
-    title <- getLine
-    putStr "Prepend to tweets (up to 10 chars): "
-    p <- getLine
-    let prepend = take 10 p
-    putStr "Append to tweets (up to 20 chars - length of prepend): "
-    a <- getLine
-    let append = take (20 - length prepend) a
+    uri          <- getUri "Feed URI: "
+    title        <- getStrLen "Feed name (up to 100 chars): " 100
+    prepend      <- getStrLen "Prepend to tweets (up to 10 chars): " 10
+    append       <- getStrLen "Append to tweets (up to 20 chars - length of prepend): " (20 - length prepend)
     tweetsPerRun <- getIntLine "Tweets per run (1-5): " 1 5
-    checkEvery <- getIntLine "Check every n minutes (5 and above): " 5 9999999
+    checkEvery   <- getIntLine "Check every n minutes (5 and above): " 5 9999999
     putStr "OK? (Y for yes anything else for no): "
     ok <- getLine
     now <- getCurrentTime
@@ -80,6 +76,29 @@ addFeed = do
       else do putStr "Give up? (Q for quit anything else to try again): "
               q <- getLine
               unless (q == "Q" || q == "q") addFeed
+
+getUri :: String -> IO String
+getUri m = do 
+    putStr m
+    s <- getLine
+    req <- fmap Just (parseRequest s) `X.catch` handleBadUri
+    case req of
+      Just _ -> return s
+      Nothing -> getUri m
+  where
+    handleBadUri :: HttpException -> IO (Maybe Request)
+    handleBadUri e = do
+        putStrLn $ "Error: Can't parse URI\n\t" ++ show e
+        return Nothing
+
+getStrLen :: String -> Int -> IO String
+getStrLen m max = do
+    putStr m
+    s <- getLine
+    if length s > max
+    then do putStrLn $ "Error: String should be maximum of " ++ show max ++ " characters"
+            getStrLen m max
+    else return s
 
 getIntLine :: String -> Int -> Int -> IO Int
 getIntLine m min max = do
