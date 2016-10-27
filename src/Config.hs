@@ -101,7 +101,7 @@ twitterOauthCredentials = do
 -- If no config is found, this default string will be written to the file
 defaultConfigString :: String
 defaultConfigString =
-    unlines [ "# rsstwit configuration file"
+    unlines [ "# RSSTwit configuration file"
             , ""
             , "# Name for your database"
             , "dbName = \"rsstwit.sqlite\""
@@ -112,7 +112,7 @@ defaultConfigString =
             , "# Max length in characters of a t.co link + 1 cf: https://dev.twitter.com/rest/reference/get/help/configuration"
             , "shortUrlLength = 24"
             , ""
-            , "# Twitter API info; you will need to supply these before rsstwit works"
+            , "# Twitter API info; you will need to supply these before RSSTwit works"
             , "# twitterConsumerKey    = \"\""
             , "# twitterConsumerSecret = \"\""
             , "# twitterOauthToken     = \"\""
