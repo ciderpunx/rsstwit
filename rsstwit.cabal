@@ -21,9 +21,13 @@ library
                      , Db
                      , Cli
                      , Lib
+                     , Config
   build-depends:       base >= 4.7 && < 5
                      , bytestring
+                     , configurator
+                     , directory
                      , extra
+                     , filepath
                      , http-conduit
                      , monad-logger
                      , lens
@@ -75,4 +79,4 @@ test-suite rsstwit-test
 
 source-repository head
   type:     git
-  location: https://github.com/githubuser/rsstwit
+  location: https://github.com/ciderpunx/rsstwit

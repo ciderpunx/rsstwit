@@ -9,8 +9,7 @@ import qualified Data.Text as T
 import Control.Lens
 import Control.Exception as X
 
---  TODO load API deets from a config file
-import TwitterCredsPrivate
+import Config
 
 -- Takes a T.Text and returns Just that text if tweeted, 
 -- Nothing otherwise
@@ -20,6 +19,7 @@ tweetText t =
   where
     tt text = do
       mgr <- newManager tlsManagerSettings
+      twInfo <- getTwinfo
       res <- call twInfo mgr $ update text
       return $ res ^? statusText
 
