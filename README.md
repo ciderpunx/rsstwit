@@ -18,25 +18,15 @@ You will need some credentials from Twitter for the app.
 
 You set up a new app at [https://apps.twitter.com/](https://apps.twitter.com/). Then get write access for it and make yourself an oauth_token and oauth_token secret.
 
-You will need to create a file called src/TwitterCredsPrivate.hs containing this code -- proper config file coming soon, I promise. 
+When you first run rsstwit it should create your config file, most likely in a subfolder of your home directory called .rsstwit. In there you will find a config file called rsstwit.cfg. Fill in your creds in rsstwit.cfg thus
 
-    import Web.Twitter.Conduit
-    
-    tokens :: OAuth
-    tokens = twitterOAuth
-       { oauthConsumerKey    = "YOUR_CONSUMER_KEY"
-       , oauthConsumerSecret = "YOUR_CONSUMER_SECRET"
-       }
-    
-    credential :: Credential
-    credential = Credential
-       [ ("oauth_token",        "YOUR_OAUTH_TOKEN")
-       , ("oauth_token_secret", "YOUR_OAUTH_SECRET")
-       ]
-    
-    twInfo = setCredential tokens credential def
+    # Twitter API info; you will need to supply these before rsstwit works
+    twitterConsumerKey    = "YOUR CONSUMER_KEY"
+    twitterConsumerSecret = "YOUR_CONSUMER_SECRET"
+    twitterOauthToken     = "YOUR_ACCESS_TOKEN"
+    twitterOauthSecret    = "YOUR_ACCESS_SECRET"
 
-By default rsstwit stores its database at /tmp/rsstwit.sqlite3. You can change that in src/Db.hs to somewhere more sensible.
+By default rsstwit stores its database in your .rsstwit folder (probably /home/you/.rsstwit) in a file called rsstwit.sqlite3.
 
 Next, you will want a working install of [stack](https://docs.haskellstack.org/en/stable/README/). Probably a libsqlite3 too. I should test that.
 
