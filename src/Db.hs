@@ -35,8 +35,6 @@ import qualified Data.Text as T
 import Config
 import FetchFeed
 
--- TODO: deleteFeed
-
 share [ mkPersist sqlSettings
       , mkMigrate "migrateAll"
       , mkSave "entityDefs"
@@ -50,6 +48,7 @@ Feed
     tweetsPerRun Int
     checkEvery Int
     nextCheck UTCTime
+    firstRun Bool
     UniqueURI uri
     deriving Show
 Entry
@@ -58,6 +57,7 @@ Entry
     link T.Text
     retrieved UTCTime
     tweeted Bool
+    skip Bool
     deriving Show
 |]
 
@@ -78,7 +78,9 @@ listFeeds = do
     dbname <- dbName
     runSqlite dbname $ do
       fs <- allFeeds
-      mapM_ listFeed fs
+      if null fs
+      then liftIO $ putStrLn "No feeds yet use 'rsstwit add' to create one."
+      else mapM_ listFeed fs
   where
     listFeed f = do
       let fv = entityVal f
@@ -113,9 +115,13 @@ deleteFeed fid = do
 -- Given a feed entity, fetch its entries, fetch the feed,
 -- compare the first maxEntries feed entries with the db entries
 -- adding any unseen ones to the database and update next fetch time
--- Assumptions: The feed is in reverse chronological order.
+-- If this is our first run mark all items skippable excepr the first
+-- tweets per run tweets -- TODO check ordering!
+-- Assumptions: The feed is in reverse chronological order so the tweets we
+--              want to tweet are at the "top".
 --              Links are used for comparison rather than ids which are often
---              absent from feeds in the wild.
+--              absent from feeds in the wild. But it will fuck up if the same 
+--              link is in the feed more than once.
 updateFeed :: Entity Feed -> SqlPersistM [Key Entry]
 updateFeed f = do
     dbentries <- entriesForFeed f
@@ -129,11 +135,18 @@ updateFeed f = do
             fk      = entityKey f
             fv      = entityVal f
         now <- liftIO getCurrentTime
-        _ <- update fk [FeedNextCheck =. addUTCTime (realToFrac $ feedCheckEvery fv) now]
-        mapM (createEntry f) toAdds
+        let ffr = feedFirstRun fv
+        _ <- update fk [ FeedNextCheck =. addUTCTime (realToFrac $ feedCheckEvery fv) now
+                       , FeedFirstRun =. False]
+        es <- mapM (createEntry f) toAdds
+        if ffr -- first run, mark some entries as to be skipped cf: https://github.com/ciderpunx/rsstwit/issues/7
+        then do mapM_ (\k -> update k [ EntrySkip =. False]) $ take (feedTweetsPerRun fv) es
+                return es
+        else return es
 
 -- Given a feed and a postable, insert a new Entry, with 0 tweeted, feed id set
 -- the link, title and pubDate from the postable, retrieved set to now
+createEntry :: Entity Feed -> Postable -> SqlPersistM (Key Entry)
 createEntry f p = do
     now <- liftIO getCurrentTime
     insert $ Entry (entityKey f) -- entryFeedId
@@ -141,8 +154,11 @@ createEntry f p = do
                    (link p)      -- entryLink
                    now           -- entryRetrieved
                    False         -- entryTweeted
+                   True          -- entrySkip
 
-wasTweeted ek = update ek [EntryTweeted =. True]
+wasTweeted :: Key Entry -> SqlPersistM ()
+wasTweeted ek =
+    update ek [EntryTweeted =. True]
 
 entriesForFeed :: Entity Feed -> SqlPersistM [Entity Entry]
 entriesForFeed f =
@@ -163,8 +179,9 @@ tweetables f = do
         post = feedAppend fv
         sPost= if T.null post then T.empty else " " +++ post
         tl   = 140 - ul - (T.length preS + T.length sPost)
-    es <- selectList [ EntryFeedId ==. fk
+    es <- selectList [ EntryFeedId  ==. fk
                      , EntryTweeted ==. False
+                     , EntrySkip    ==. False
                      ]
                      [ Asc EntryRetrieved
                      , LimitTo (feedTweetsPerRun fv)
@@ -194,3 +211,4 @@ egFeed =
          1
          30
          (UTCTime (fromGregorian 2016 10 20) 1200)
+         False

@@ -42,15 +42,16 @@ cronRun = do
   runSqlite dbname $ do
     fsToUpdate <- feedsToUpdate
     mapM_ updateFeed fsToUpdate
-    toTweets <- concatMapM tweetables fsToUpdate
-    sentTweets <- filterM (liftIO . sendTweet) toTweets
+    af <- allFeeds -- any feed may have tweetable entries
+    toTweets <- concatMapM tweetables af
+    sentTweets <- filterM (liftIO . sendTweet) (reverse toTweets) -- i.e. oldest first
     mapM_ (wasTweeted . fst) sentTweets
   where
     sendTweet t = do
         tweet <- tweetText (snd t)
         case tweet of
           Nothing -> return False
-          Just _  -> return True
+          Just t  -> return True
 
 addFeed :: IO ()
 addFeed = do
@@ -72,7 +73,8 @@ addFeed = do
                      (T.pack append)
                      tweetsPerRun
                      (checkEvery * 60)
-                    now  -- will be checked on next cron run
+                     now  -- will be checked on next cron run
+                     True  -- this is our first run, mark it so
               putStrLn "Feed created, will start tweeting when the next cron job runs."
               return ()
       else do putStr "Give up? (Q for quit anything else to try again): "
