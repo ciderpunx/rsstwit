@@ -24,7 +24,9 @@ tweetText t =
       return $ res ^? statusText
 
 eHandler :: TwitterError -> IO (Maybe T.Text)
-eHandler e = return Nothing
+eHandler e = do
+    print $ "Error: problem tweeting\n\t" ++ show e
+    return Nothing
 
 ---- test function, get timeline
 --getHomeTimeLine :: IO ()
