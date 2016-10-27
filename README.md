@@ -16,6 +16,7 @@ Installing
 You will need some credentials from Twitter for the app. Set up a new app at [https://apps.twitter.com/](https://apps.twitter.com/). Then get write access for it and make yourself an oauth_token and oauth_token secret, there is a [video](https://www.youtube.com/watch?v=svoUK2DmGmw) on youtube which shows you the steps.
 
 When you first run RSSTwit, it should create your config file, most likely in a subfolder of your home directory called .rsstwit. In there you will find a config file called rsstwit.cfg. Fill in your creds in rsstwit.cfg thus
+
     # Twitter API info; you will need to supply these before RSSTwit works
     twitterConsumerKey    = "YOUR CONSUMER_KEY"
     twitterConsumerSecret = "YOUR_CONSUMER_SECRET"
