@@ -13,9 +13,9 @@ RSSTwit is a prototype and may well be broken in all sorts of horrific ways. At 
 Installing
 ----------
 
-You will need some credentials from Twitter for the app. Set up a new app at [https://apps.twitter.com/](https://apps.twitter.com/). Then get write access for it and make yourself an oauth_token and oauth_token secret, there is a [video](https://www.youtube.com/watch?v=svoUK2DmGmw) on youtube which shows you the steps.
+You will need some credentials from Twitter for the app. Set up a new app at [https://apps.twitter.com/](https://apps.twitter.com/). Then get write access for it and make yourself an oauth_token and oauth_token secret, there is a [video](https://www.youtube.com/watch?v=svoUK2DmGmw) on youtube which shows you the first bit. You just generate your access creds at the end.
 
-When you first run RSSTwit, it should create your config file, most likely in a subfolder of your home directory called .rsstwit. In there you will find a config file called rsstwit.cfg. Fill in your creds in rsstwit.cfg thus
+When you first run RSSTwit, it should create your config file, most likely in a subfolder of your home directory called .rsstwit. In there you will find a config file called rsstwit.cfg. Fill in your creds in rsstwit.cfg thus:
 
     # Twitter API info; you will need to supply these before RSSTwit works
     twitterConsumerKey    = "YOUR CONSUMER_KEY"
@@ -128,9 +128,17 @@ Alternatives
 
 RSSTwit is very much a prototype. If you need to do this reliably, here are some alternatives that people on Twitter [suggested](https://twitter.com/ciderpunx/status/789783130513301504).
 
+### Services
+
 * [Buffer](https://buffer.com) - paid for RSS
 * [dlvr.it](https://dlvr.it) - paid for more than 5 feeds
 * [IFTT](https://iftt.com) - not tried, but have seen others use it
 * [twibble.io](https://twibble.io)
 * [Zapier](https://zapier.com)
-* [RSSToTwitterPy3](https://github.com/engdeathmatch/RSSToTwitterPy3)
+
+### Programs
+
+* [RSSToTwitterPy3](https://github.com/engdeathmatch/RSSToTwitterPy3) - [suggested](https://twitter.com/StegoPax/status/789809463721070592) by @StegoPax
+* [rss-to-tweet](https://github.com/grantm/rss-to-tweet) - nice Perl implementation
+* [feedr](https://github.com/housed/feedr) - full featured Python script
+* [RSS-To-Twitter](https://github.com/jeckman/RSS-To-Twitter) - Well we should have all the Ps -- this is in PHP
