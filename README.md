@@ -126,7 +126,7 @@ Two reasons really.
 Alternatives
 ------------
 
-RSSTwit is very much a prototype. If you need to do this reliably, here are some alternatives that people on Twitter [suggested](https://twitter.com/ciderpunx/status/789783130513301504).
+RSSTwit is very much a prototype. If you need to do this reliably, here are some alternatives that people on Twitter [suggested](https://twitter.com/ciderpunx/status/789783130513301504), or that I have duckduckgo-ed. I have tried twibble.io and dlvr.it (and they were fine) but I have not tried the rest.
 
 ### Services
 
