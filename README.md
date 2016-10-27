@@ -1,10 +1,9 @@
 RSSTwit: Commandline utility to send entries from RSS feeds to Twitter
 ======================================================================
 
-RSSTwit is a sort of inverse to [TwitRSS.me](https://github.com/ciderpunx/twitrssme). It tweets entries from RSS feeds on your behalf so you can enjoy your life and come back to a fascinating autocurated twitter feed without having to actually tweet stuff yourself.
+RSSTwit is a sort of inverse to [TwitRSS.me](https://github.com/ciderpunx/twitrssme). It tweets entries from RSS feeds on your behalf so you can enjoy your life and come back to a fascinating auto-curated twitter feed without having to actually tweet stuff yourself.
 
-It came about in response to twitterfeed announcing that they would be shutting down at the end of October 2016.
-
+It came about in response to TwitterFeed announcing that they would be shutting down at the end of October 2016.
 RSSTwit is intended to be used on Linux. It may work on FreeBSD, Macs and such. May even work on Windows, but it has not been tested on those other platforms.
 
 RSSTwit is written in Haskell, which I am learning at present. Please excuse any horrific newbie mistakes and even better tell me where I messed up!
@@ -14,21 +13,30 @@ RSSTwit is a prototype and may well be broken in all sorts of horrific ways. At 
 Installing
 ----------
 
-You will need some credentials from Twitter for the app.
+You will need some credentials from Twitter for the app. Set up a new app at [https://apps.twitter.com/](https://apps.twitter.com/). Then get write access for it and make yourself an oauth_token and oauth_token secret, there is a [video](https://www.youtube.com/watch?v=svoUK2DmGmw) on youtube which shows you the steps.
 
-You set up a new app at [https://apps.twitter.com/](https://apps.twitter.com/). Then get write access for it and make yourself an oauth_token and oauth_token secret.
-
-When you first run rsstwit it should create your config file, most likely in a subfolder of your home directory called .rsstwit. In there you will find a config file called rsstwit.cfg. Fill in your creds in rsstwit.cfg thus
-
-    # Twitter API info; you will need to supply these before rsstwit works
+When you first run RSSTwit, it should create your config file, most likely in a subfolder of your home directory called .rsstwit. In there you will find a config file called rsstwit.cfg. Fill in your creds in rsstwit.cfg thus
+    # Twitter API info; you will need to supply these before RSSTwit works
     twitterConsumerKey    = "YOUR CONSUMER_KEY"
     twitterConsumerSecret = "YOUR_CONSUMER_SECRET"
     twitterOauthToken     = "YOUR_ACCESS_TOKEN"
     twitterOauthSecret    = "YOUR_ACCESS_SECRET"
 
-By default rsstwit stores its database in your .rsstwit folder (probably /home/you/.rsstwit) in a file called rsstwit.sqlite3.
+By default RSSTwit stores its database in your .rsstwit folder (probably /home/you/.rsstwit) in a file called rsstwit.sqlite3.
 
 Next, you will want a working install of [stack](https://docs.haskellstack.org/en/stable/README/). Probably a libsqlite3 too. I should test that.
+
+On unix-like systems you should be able to:
+
+    wget -qO- https://get.haskellstack.org/ | sh
+
+Or if you prefer curl:
+
+    curl -sSL https://get.haskellstack.org/ | sh
+
+Then set up stack with
+
+    stack setup
 
 Once you have stack up and running you can clone this repo:
 
@@ -38,12 +46,12 @@ Then do:
 
     stack install
 
-And the executable will be in your stack path (eg. /home/you/.local/bin/). If you have your PATH set up to include this directory then you can now type "rsstwit" to start the program.
+It will take time. Lots of time. Eventually the executable will be in your stack path (eg. /home/you/.local/bin/). If you have your PATH set up to include this directory then you can now type "rsstwit" to start the program.
 
 Running
 -------
 
-You can use rsstwit from the commandline to add, remove and list feeds. In addition it has a cron mode, so it can be run as a cronjob and take care of posting your tweets at regular intervals.
+You can use RSSTwit from the commandline to add, remove and list feeds. In addition it has a cron mode, so it can be run as a cronjob and take care of posting your tweets at regular intervals.
 
 ### Initialize your database
 
@@ -104,7 +112,7 @@ Update the feed at intervals of about this length (depends on when your cron job
 
 ### Advanced noodling
 
-The database is just a sqlite database so you can mess around with things if rsstwit is not working as expected.
+The database is just a sqlite database so you can mess around with things if RSSTwit is not working as expected.
 
 
 Why make this?
