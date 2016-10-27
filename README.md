@@ -46,20 +46,14 @@ Once you have stack up and running you can clone this repo:
 
 Then do:
 
-    stack build
+    stack install
 
-And the executable will be in:
-
-    ./.stack-work/install/x86_64-linux/lts-7.4/8.0.1/bin/rsstwit
-
-You may want to move it somewhere more convenient.
+And the executable will be in your stack path (eg. /home/you/.local/bin/). If you have your PATH set up to include this directory then you can now type "rsstwit" to start the program.
 
 Running
 -------
 
 You can use rsstwit from the commandline to add, remove and list feeds. In addition it has a cron mode, so it can be run as a cronjob and take care of posting your tweets at regular intervals.
-
-In the following I assume you have moved the rsstwit binary to /usr/local/bin or somewhere on your path.
 
 ### Initialize your database
 
@@ -73,7 +67,7 @@ I like to use:
 
 Add a line running the cron command every so often:
 
-    */20 * * * * /usr/local/bin/rsstwit cron
+    */20 * * * * /path/to/bin/rsstwit cron
 
 ### Add a new feed
 
