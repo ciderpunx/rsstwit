@@ -6,7 +6,7 @@ RSSTwit is a sort of inverse to [TwitRSS.me](https://github.com/ciderpunx/twitrs
 It came about in response to TwitterFeed announcing that they would be shutting down at the end of October 2016.
 RSSTwit is intended to be used on Linux. It may work on FreeBSD, Macs and such. May even work on Windows, but it has not been tested on those other platforms.
 
-RSSTwit is written in Haskell, which I am learning at present. Please excuse any horrific newbie mistakes and even better tell me where I messed up!
+RSSTwit is written in [Haskell](https://haskell.org), which I am learning at present. Please excuse any horrific newbie mistakes and even better tell me where I messed up!
 
 RSSTwit is a prototype and may well be broken in all sorts of horrific ways. At present it doesn't even have tests.
 
@@ -34,7 +34,7 @@ Or if you prefer curl:
 
     curl -sSL https://get.haskellstack.org/ | sh
 
-Then set up stack with
+Then set up stack with:
 
     stack setup
 
@@ -71,12 +71,11 @@ Add a line running the cron command every so often:
 
     rsstwit add
 
-And you will be asked the following before your feed is added to your database:
+And you will be asked the following questions before your feed is added to your database (I've added brief explanations after each).
 
     Feed URL: http://charlieharvey.com/page/feed/rss
 
 URL of feed -- should be RSS, atom will probably work but is less tested  
-BEWARE you can enter invalid URLs here
 
     Feed name: Charlie's blog
 
