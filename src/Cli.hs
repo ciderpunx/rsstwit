@@ -1,24 +1,24 @@
-module Cli where
+module Cli (main) where
 
 -- Here we deal with command line interaction and running as a cron job
-
-import Network.HTTP.Conduit (parseRequest, Request (..), HttpException (..) )
-import Control.Monad.Extra (concatMapM)
 import Control.Monad (unless,join, filterM)
+import Control.Monad.Extra (concatMapM)
 import Control.Monad.IO.Class (liftIO)
-import qualified Control.Exception as X
-import Text.Read (readMaybe)
-import qualified Data.Text as T
-import Data.Time (UTCTime, getCurrentTime)
 import Data.Int (Int64)
+import Data.Time (UTCTime, getCurrentTime)
 import Database.Persist
 import Database.Persist.Sqlite
+import Network.HTTP.Conduit (parseRequest, Request (..), HttpException (..) )
 import Options.Applicative
 import System.IO
+import Text.Read (readMaybe)
+import qualified Control.Exception as X
+import qualified Data.Text as T
 
 import Db
 import FetchFeed
 import Twitter
+import Config
 
 opts :: Parser (IO ())
 opts = subparser
@@ -37,7 +37,9 @@ delFeed n =
     deleteFeed $ toSqlKey (read n :: Int64)
 
 cronRun :: IO ()
-cronRun = runSqlite dbname $ do
+cronRun = do
+  dbname <- dbName
+  runSqlite dbname $ do
     fsToUpdate <- feedsToUpdate
     mapM_ updateFeed fsToUpdate
     toTweets <- concatMapM tweetables fsToUpdate

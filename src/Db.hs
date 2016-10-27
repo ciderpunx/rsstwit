@@ -6,31 +6,36 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE QuasiQuotes                #-}
 {-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeFamilies #-}
 
-module Db where
+module Db ( allFeeds
+          , createFeed
+          , deleteFeed
+          , feedsToUpdate
+          , initDb
+          , listFeeds
+          , tweetables
+          , updateFeed
+          , wasTweeted
+          , Feed (..)
+          ) where
 
-import Control.Monad.Reader (ReaderT)
 import Control.Monad.Extra (concatMapM)
-import Control.Monad.Logger (NoLoggingT)
-import Control.Monad.Trans.Resource.Internal (ResourceT)
-import Database.Persist
-import Database.Persist.TH
-import Database.Persist.Sqlite
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Logger (NoLoggingT)
+import Control.Monad.Reader (ReaderT)
+import Control.Monad.Trans.Resource.Internal (ResourceT)
 import Data.Time
 import Data.Time.Format
+import Database.Persist
+import Database.Persist.Sqlite
+import Database.Persist.TH
 import qualified Data.Text as T
+
+import Config
 import FetchFeed
 
-
 -- TODO: deleteFeed
--- todo external config file for these!
-dbname = "/tmp/rsstwit.sqlite3"
-         -- "test/mock.sqlite3"
-         -- ":memory:"
-maxEntries = 10
-shortUrlLength = 24 -- short url plus space!
 
 share [ mkPersist sqlSettings
       , mkMigrate "migrateAll"
@@ -57,9 +62,11 @@ Entry
 |]
 
 --initDb :: IO ()
-initDb = runSqlite dbname $ do
-    _ <- doMigrations
-    liftIO $ putStrLn "Initialized database"
+initDb = do
+    dbname <- dbName
+    runSqlite dbname $ do
+      _ <- doMigrations
+      liftIO $ putStrLn "Initialized database"
 
 allFeeds :: SqlPersistM [Entity Feed]
 allFeeds =
@@ -67,9 +74,11 @@ allFeeds =
 
 -- maybe todo: convert t all use T.text
 listFeeds :: IO ()
-listFeeds = runSqlite dbname $ do
-    fs <- allFeeds
-    mapM_ listFeed fs
+listFeeds = do
+    dbname <- dbName
+    runSqlite dbname $ do
+      fs <- allFeeds
+      mapM_ listFeed fs
   where
     listFeed f = do
       let fv = entityVal f
@@ -89,14 +98,17 @@ feedsToUpdate = do
     selectList [FeedNextCheck <=. now] []
 
 createFeed :: Feed -> IO (Key Feed)
-createFeed f =
+createFeed f = do
+    dbname <- dbName
     runSqlite dbname (insert f :: SqlPersistM (Key Feed))
 
 deleteFeed :: Key Feed -> IO ()
-deleteFeed fid = runSqlite dbname $ do
-    delete fid::SqlPersistM ()
-    deleteWhere [EntryFeedId  ==. fid ] :: SqlPersistM ()
-    return ()
+deleteFeed fid = do
+    dbname <- dbName
+    runSqlite dbname $ do
+      delete fid::SqlPersistM ()
+      deleteWhere [EntryFeedId  ==. fid ] :: SqlPersistM ()
+      return ()
 
 -- Given a feed entity, fetch its entries, fetch the feed,
 -- compare the first maxEntries feed entries with the db entries
@@ -111,8 +123,9 @@ updateFeed f = do
     case postables of
       Nothing -> return [] -- failed to fetch feed
       Just ps -> do
+        maxEs <- liftIO maxEntries
         let dblinks = map (entryLink . entityVal) dbentries
-            toAdds  = filter (\p -> link p `notElem` dblinks) (take maxEntries ps)
+            toAdds  = filter (\p -> link p `notElem` dblinks) (take maxEs ps)
             fk      = entityKey f
             fv      = entityVal f
         now <- liftIO getCurrentTime
@@ -142,13 +155,14 @@ entriesForFeed f =
 -- Given a feed, find tweetable entries and return formatted tweet texts
 tweetables :: Entity Feed -> SqlPersistM [(Key Entry,T.Text)]
 tweetables f = do
+    ul <- liftIO shortUrlLength
     let fv   = entityVal f
         fk   = entityKey f
         pre  = feedPrepend fv
         preS = if T.null pre then T.empty else pre +++ " "
         post = feedAppend fv
         sPost= if T.null post then T.empty else " " +++ post
-        tl   = 140 - shortUrlLength - (T.length preS + T.length sPost)
+        tl   = 140 - ul - (T.length preS + T.length sPost)
     es <- selectList [ EntryFeedId ==. fk
                      , EntryTweeted ==. False
                      ]

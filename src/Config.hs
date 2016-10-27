@@ -1,17 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Config (maxEntries, shortUrlLength, dbName, getTwinfo) where
+module Config ( maxEntries
+              , shortUrlLength
+              , dbName
+              , getTwinfo
+              ) where
 
-import Prelude hiding (lookup)
 import Data.Configurator
 import Data.Configurator.Types
+import Data.Maybe (isNothing)
+import Prelude hiding (lookup)
 import System.Directory (getAppUserDataDirectory, createDirectoryIfMissing, doesFileExist)
 import System.FilePath (joinPath)
-import qualified Control.Exception as X
-import qualified Data.Text as T
-import qualified Data.ByteString as B
-import Data.Maybe (isNothing)
 import Web.Twitter.Conduit hiding (lookup)
+import qualified Control.Exception as X
+import qualified Data.ByteString as B
+import qualified Data.Text as T
 
 configFileName = "rsstwit.cfg"
 dbFilename     = "rsstwit.sqlite"
@@ -35,13 +39,13 @@ config = do
 
 -- Name for the database, which is stored in the user data directory. 
 -- If not present fall back to dbFallbackFile.
-dbName :: IO String
+dbName :: IO T.Text
 dbName = do
     c <- config
     confdir <- getAppUserDataDirectory "rsstwit"
     let dbDef = joinPath [confdir, dbFilename]
     dn <- lookupDefault dbFallbackFile c (T.pack "dbName")
-    return $ if dn == dbFallbackFile then dn else joinPath [confdir, dn]
+    return . T.pack $ if dn == dbFallbackFile then dn else joinPath [confdir, dn]
 
 -- Maximum allowed number of entries in a feed
 maxEntries :: IO Int

@@ -1,12 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
-module FetchFeed where
 
+module FetchFeed ( fetchFeed
+                 , Postable (..)
+                 ) where
+
+import Control.Exception as X
 import Network.HTTP.Conduit
 import Text.XML
 import Text.XML.Cursor
-import qualified Data.Text as T
 import qualified Data.ByteString.Lazy as L
-import Control.Exception as X
+import qualified Data.Text as T
 
 -- Only title and link are used in the database.
 data Postable = Postable { title :: T.Text
