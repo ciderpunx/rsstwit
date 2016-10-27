@@ -2,12 +2,12 @@
 
 module Twitter (tweetText) where
 
+import Control.Exception as X
+import Control.Lens
 import Prelude hiding (map)
 import Web.Twitter.Conduit
 import Web.Twitter.Types.Lens
 import qualified Data.Text as T
-import Control.Lens
-import Control.Exception as X
 
 import Config
 
