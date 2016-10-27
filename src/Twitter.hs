@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Twitter where
+module Twitter (tweetText) where
 
 import Prelude hiding (map)
 import Web.Twitter.Conduit
