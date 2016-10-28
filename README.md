@@ -6,7 +6,7 @@ RSSTwit is a sort of inverse to [TwitRSS.me](https://github.com/ciderpunx/twitrs
 It came about in response to TwitterFeed announcing that they would be shutting down at the end of October 2016.
 RSSTwit is intended to be used on Linux. It may work on FreeBSD, Macs and such. May even work on Windows, but it has not been tested on those other platforms.
 
-RSSTwit is written in [Haskell](https://haskell.org), which I am learning at present. Please excuse any horrific newbie mistakes and even better tell me where I messed up!
+RSSTwit is written in [Haskell](https://haskell.org), which I am learning at present. Please excuse any embarrassing newbie mistakes and even better tell me where I messed up!
 
 RSSTwit is a prototype and may well be broken in all sorts of horrific ways. At present it doesn't even have tests.
 
