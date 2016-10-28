@@ -24,6 +24,7 @@ opts :: Parser (IO ())
 opts = subparser
     ( command "delete" (info (delFeed <$> argument str idm) idm)
    <> command "add"    (info (pure addFeed) idm)
+   <> command "show"   (info (showFeed <$> argument str idm) idm)
    <> command "list"   (info (pure listFeeds) idm)
    <> command "cron"   (info (pure cronRun) idm)
    <> command "init"   (info (pure initDb) idm)

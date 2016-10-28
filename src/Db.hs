@@ -6,7 +6,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE QuasiQuotes                #-}
 {-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 module Db ( allFeeds
           , createFeed
@@ -14,6 +14,7 @@ module Db ( allFeeds
           , feedsToUpdate
           , initDb
           , listFeeds
+          , showFeed
           , tweetables
           , updateFeed
           , wasTweeted
@@ -25,11 +26,13 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.Trans.Resource.Internal (ResourceT)
+import Data.Int (Int64)
 import Data.Time
 import Data.Time.Format
 import Database.Persist
 import Database.Persist.Sqlite
 import Database.Persist.TH
+import System.IO
 import qualified Data.Text as T
 
 import Config
@@ -72,7 +75,29 @@ allFeeds :: SqlPersistM [Entity Feed]
 allFeeds =
     selectList [] []
 
--- maybe todo: convert t all use T.text
+showFeed :: String -> IO ()
+showFeed id = do
+    dbname <- dbName
+    runSqlite dbname $ do
+      feed <- get (toSqlKey (read id) :: Key Feed) :: SqlPersistM (Maybe Feed)
+      case feed of
+        Nothing -> liftIO . putStrLn $ "Can't show feed with id: " ++ show id
+        Just f  -> liftIO $ display f
+  where
+    display f = do
+      hSetBuffering stdout NoBuffering
+      putStrLn $ "\nFeed id: " ++ show id
+      putStrLn "------------"
+      putStrLn $ "Feed URI   : " ++ T.unpack (feedUri f)
+      putStrLn $ "Title      : " ++ T.unpack (feedTitle f)
+      putStrLn $ "Prepend    : " ++ T.unpack (feedPrepend f)
+      putStrLn $ "Append     : " ++ T.unpack (feedAppend f)
+      putStrLn $ "Tweets/run : " ++ show (feedTweetsPerRun f)
+      putStrLn $ "Check every: " ++ show (feedCheckEvery f) ++ " minutes"
+      putStrLn $ "Next check : " ++ show (feedNextCheck f) ++ " (UTC)"
+      putStrLn $ "First run? : " ++ show (feedFirstRun f)
+      putStrLn ""
+
 listFeeds :: IO ()
 listFeeds = do
     dbname <- dbName

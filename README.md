@@ -106,9 +106,26 @@ Update the feed at intervals of about this length (depends on when your cron job
     rsstwit list
     1: Charlie's blog (http://charlieharvey.org.uk/page/feed/rss) Next check: 2016-10-23 21:33:54.683585 UTC
 
+### Show full info for a single feed
+
+    rsstwit show 1
+
+    Feed id: "1"
+    ------------
+    Feed URI   : http://charlieharvey.org.uk/page/feed/rss
+    Title      : Charlie's blog
+    Prepend    : 
+    Append     : via @ciderpunx
+    Tweets/run : 1
+    Check every: 300 minutes
+    Next check : 2016-10-28 14:11:06.087595 UTC (UTC)
+    First run? : True
+
+
 ### Delete a feed
 
     rsstwit delete 1
+
 
 ### Advanced noodling
 
