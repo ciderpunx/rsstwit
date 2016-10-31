@@ -23,7 +23,7 @@ type URI = T.Text
 fetchFeed :: URI -> IO (Maybe [Postable])
 fetchFeed uri = do
     let u = T.unpack $ T.strip uri
-    print $ "Fetching: " ++ u
+    -- print $ "Fetching: " ++ u
     src <- simpleHttp u `X.catch` fetchHandler
     if src == L.empty
     then return Nothing
