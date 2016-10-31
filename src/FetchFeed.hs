@@ -23,7 +23,7 @@ type URI = T.Text
 fetchFeed :: URI -> IO (Maybe [Postable])
 fetchFeed uri = do
     let u = T.unpack $ T.strip uri
-    -- print $ "Trying: " ++ u
+    print $ "Fetching: " ++ u
     src <- simpleHttp u `X.catch` fetchHandler
     if src == L.empty
     then return Nothing
@@ -35,14 +35,24 @@ getElts :: Document -> IO (Maybe [Postable])
 getElts doc = do
     let cursor = fromDocument doc
         rss    = cursor $.// laxElement "rss"
-    return . Just . map fromJust $
-      if null rss -- we got a feed that doesn't look like an rss
-      then map atomToPostable (cursor $// laxElement "entry")
-      else map rssToPostable (cursor $// laxElement "item")
+        isAtom = null rss
+    ps <- extractPostables isAtom cursor `X.catch` postHandler
+    let qs = map fromJust ps
+    return $ Just qs
+
+extractPostables :: Bool -> Cursor -> IO [Maybe Postable]
+extractPostables isAtom cursor = return $
+    if  isAtom
+    then map atomToPostable (cursor $// laxElement "entry")
+    else map rssToPostable (cursor $// laxElement "item")
+
+postHandler :: X.SomeException -> IO [Maybe Postable]
+postHandler e =
+    putStrLn "Error building postable from feed\n\t" >> print e >> return [Nothing]
 
 eltHandler :: String -> X.SomeException -> IO (Maybe [Postable])
 eltHandler u e =
-    putStrLn "Error extracting elements from feed\n\t" >> print e >> return Nothing
+    putStr "Error extracting elements from feed: " >> putStr u >>  putStr "\n\t" >> print e >> return Nothing
 
 fetchHandler :: HttpException -> IO L.ByteString
 fetchHandler e =
