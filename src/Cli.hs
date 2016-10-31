@@ -45,7 +45,7 @@ cronRun = do
     mapM_ updateFeed fsToUpdate
     af <- allFeeds -- any feed may have tweetable entries
     toTweets <- concatMapM tweetables af
-    sentTweets <- filterM (liftIO . sendTweet) (reverse toTweets) -- i.e. oldest first
+    sentTweets <- filterM (liftIO . sendTweet) toTweets -- i.e. oldest first
     mapM_ (wasTweeted . fst) sentTweets
   where
     sendTweet t = do

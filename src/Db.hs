@@ -167,7 +167,8 @@ updateFeed f = do
         if ffr -- first run, mark some entries as to be skipped cf: https://github.com/ciderpunx/rsstwit/issues/7
         then do mapM_ (\k -> update k [ EntrySkip =. False]) $ take (feedTweetsPerRun fv) es
                 return es
-        else return es
+        else do mapM_ (\k -> update k [ EntrySkip =. False]) es
+                return es
 
 -- Given a feed and a postable, insert a new Entry, with 0 tweeted, feed id set
 -- the link, title and pubDate from the postable, retrieved set to now
@@ -190,7 +191,7 @@ entriesForFeed f =
     selectList [ EntryFeedId ==. entityKey f
                , EntryTweeted ==. False
                ]
-               [ Asc EntryRetrieved
+               [ Desc EntryRetrieved
                ]
 
 -- Given a feed, find tweetable entries and return formatted tweet texts
@@ -208,7 +209,7 @@ tweetables f = do
                      , EntryTweeted ==. False
                      , EntrySkip    ==. False
                      ]
-                     [ Asc EntryRetrieved
+                     [ Desc EntryRetrieved
                      , LimitTo (feedTweetsPerRun fv)
                      ]
     return $
