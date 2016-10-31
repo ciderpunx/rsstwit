@@ -159,8 +159,8 @@ updateFeed f = do
             toAdds  = filter (\p -> link p `notElem` dblinks) (take maxEs ps)
             fk      = entityKey f
             fv      = entityVal f
+            ffr     = feedFirstRun fv
         now <- liftIO getCurrentTime
-        let ffr = feedFirstRun fv
         _ <- update fk [ FeedNextCheck =. addUTCTime (realToFrac $ feedCheckEvery fv) now
                        , FeedFirstRun =. False]
         es <- mapM (createEntry f) toAdds
