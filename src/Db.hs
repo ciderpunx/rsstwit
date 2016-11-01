@@ -61,6 +61,7 @@ Entry
     retrieved UTCTime
     tweeted Bool
     skip Bool
+    UniqueLink link
     deriving Show
 |]
 
@@ -149,26 +150,29 @@ deleteFeed fid = do
 --              link is in the feed more than once.
 updateFeed :: Entity Feed -> SqlPersistM [Key Entry]
 updateFeed f = do
-    dbentries <- entriesForFeed f
+    -- dbentries <- entriesForFeed f
     postables <- liftIO $ fetchFeed (feedUri (entityVal f))
     case postables of
       Nothing -> return [] -- failed to fetch feed
       Just ps -> do
         maxEs <- liftIO maxEntries
-        let dblinks = map (entryLink . entityVal) dbentries
-            toAdds  = filter (\p -> link p `notElem` dblinks) (take maxEs ps)
-            fk      = entityKey f
-            fv      = entityVal f
-            ffr     = feedFirstRun fv
+        let ps' = take maxEs ps
+            fk  = entityKey f
+            fv  = entityVal f
+            ffr = feedFirstRun fv
+
+        -- We want the postables that are *not* in the database, get the ones that are in it
+        -- And the ps not in that list are the ones not in the db...
+        inDbs <- seenLinks ps' fk
+        let toAdds  = filter (\p -> link p `notElem` inDbs) ps'
+
         now <- liftIO getCurrentTime
         _ <- update fk [ FeedNextCheck =. addUTCTime (realToFrac $ feedCheckEvery fv) now
                        , FeedFirstRun =. False]
         es <- mapM (createEntry f) toAdds
-        if ffr -- first run, mark some entries as to be skipped cf: https://github.com/ciderpunx/rsstwit/issues/7
-        then do mapM_ (\k -> update k [ EntrySkip =. False]) $ take (feedTweetsPerRun fv) es
-                return es
-        else do mapM_ (\k -> update k [ EntrySkip =. False]) es
-                return es
+        let es' = if ffr then take (feedTweetsPerRun fv) es else es
+        mapM_ (\k -> update k [ EntrySkip =. False]) es' 
+        return es'
 
 -- Given a feed and a postable, insert a new Entry, with 0 tweeted, feed id set
 -- the link, title and pubDate from the postable, retrieved set to now
@@ -186,13 +190,13 @@ wasTweeted :: Key Entry -> SqlPersistM ()
 wasTweeted ek =
     update ek [EntryTweeted =. True]
 
-entriesForFeed :: Entity Feed -> SqlPersistM [Entity Entry]
-entriesForFeed f =
-    selectList [ EntryFeedId ==. entityKey f
-               , EntryTweeted ==. False
-               ]
-               [ Desc EntryRetrieved
-               ]
+seenLinks :: [Postable] -> Key Feed -> SqlPersistM [T.Text]
+seenLinks ls fk = do
+      xs <- selectList
+                 [ EntryFeedId ==. fk
+                 , EntryLink <-. map link ls
+                 ] [ ]
+      return $ map (entryLink . entityVal) xs
 
 -- Given a feed, find tweetable entries and return formatted tweet texts
 tweetables :: Entity Feed -> SqlPersistM [(Key Entry,T.Text)]
