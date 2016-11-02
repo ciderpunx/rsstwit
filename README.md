@@ -13,6 +13,30 @@ RSSTwit is a prototype and may well be broken in all sorts of horrific ways. At 
 Installing
 ----------
 
+### Install RSSTwit
+
+You will want a working install of [stack](https://docs.haskellstack.org/en/stable/README/). Probably a libsqlite3 too. I should test that.
+
+1. On unix-like systems you should be able to:
+
+    wget -qO- https://get.haskellstack.org/ | sh
+
+2. Set up stack with:
+
+    stack setup
+
+3. Once you have stack up and running you can clone this repo:
+
+    git clone https://github.com/ciderpunx/rsstwit.git
+
+4. Finally, run stack install.
+
+    stack install
+
+It will take time. Lots of time. Eventually the executable will be in your stack path (eg. /home/you/.local/bin/). If you have your PATH set up to include this directory then you can now type "rsstwit" to start the program.
+
+### Setup a Twitter app
+
 You will need some credentials from Twitter for the app. Set up a new app at [https://apps.twitter.com/](https://apps.twitter.com/). Then get write access for it and make yourself an oauth_token and oauth_token secret, there is a [video](https://www.youtube.com/watch?v=svoUK2DmGmw) on youtube which shows you the first bit. You just generate your access creds at the end.
 
 When you first run RSSTwit, it should create your config file, most likely in a subfolder of your home directory called .rsstwit. In there you will find a config file called rsstwit.cfg. Fill in your creds in rsstwit.cfg thus:
@@ -23,34 +47,10 @@ When you first run RSSTwit, it should create your config file, most likely in a 
     twitterOauthToken     = "YOUR_ACCESS_TOKEN"
     twitterOauthSecret    = "YOUR_ACCESS_SECRET"
 
-By default RSSTwit stores its database in your .rsstwit folder (probably /home/you/.rsstwit) in a file called rsstwit.sqlite3.
+By default RSSTwit stores its database in your .rsstwit folder (probably /home/you/.rsstwit) in a file called rsstwit.sqlite .
 
-Next, you will want a working install of [stack](https://docs.haskellstack.org/en/stable/README/). Probably a libsqlite3 too. I should test that.
-
-On unix-like systems you should be able to:
-
-    wget -qO- https://get.haskellstack.org/ | sh
-
-Or if you prefer curl:
-
-    curl -sSL https://get.haskellstack.org/ | sh
-
-Then set up stack with:
-
-    stack setup
-
-Once you have stack up and running you can clone this repo:
-
-    git clone https://github.com/ciderpunx/rsstwit.git
-
-Then do:
-
-    stack install
-
-It will take time. Lots of time. Eventually the executable will be in your stack path (eg. /home/you/.local/bin/). If you have your PATH set up to include this directory then you can now type "rsstwit" to start the program.
-
-Running
--------
+Running RSSTwit
+---------------
 
 You can use RSSTwit from the commandline to add, remove and list feeds. In addition it has a cron mode, so it can be run as a cronjob and take care of posting your tweets at regular intervals.
 
@@ -126,11 +126,9 @@ Update the feed at intervals of about this length (depends on when your cron job
 
     rsstwit delete 1
 
-
 ### Advanced noodling
 
 The database is just a sqlite database so you can mess around with things if RSSTwit is not working as expected.
-
 
 Why make this?
 --------------
