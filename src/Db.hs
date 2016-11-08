@@ -165,7 +165,7 @@ updateFeed f = do
 
         -- We want the postables that are *not* in the database, get the ones that are in it
         -- And the ps not in that list are the ones not in the db...
-        inDbs <- seenLinks ps'' fk
+        inDbs <- seenLinks ps' fk
         let toAdds  = filter (\p -> link p `notElem` inDbs) ps''
 
         now <- liftIO getCurrentTime
