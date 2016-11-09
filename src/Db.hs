@@ -150,7 +150,6 @@ deleteFeed fid = do
 --              link is in the feed more than once.
 updateFeed :: Entity Feed -> SqlPersistM [Key Entry]
 updateFeed f = do
-    -- dbentries <- entriesForFeed f
     postables <- liftIO $ fetchFeed (feedUri (entityVal f))
     case postables of
       Nothing -> return [] -- failed to fetch feed
