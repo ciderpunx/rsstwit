@@ -120,11 +120,24 @@ Update the feed at intervals of about this length (depends on when your cron job
     Check every: 300 minutes
     Next check : 2016-10-28 14:11:06.087595 UTC (UTC)
     First run? : True
+    Paused?    : False
 
 
 ### Delete a feed
 
     rsstwit delete 1
+
+### Pause a feed
+
+This stops rsstwit from fetching updates for this feed. If the feed is already paused it does nothing.
+
+    rsstwit pause 1
+
+### Resume (unpause) a feed
+
+This tells rsstwit to start fetching updates for this feed again. If the feed is not paused it does nothing.
+
+    rsstwit unpause 1
 
 ### Advanced noodling
 

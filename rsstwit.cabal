@@ -1,5 +1,5 @@
 name:                rsstwit
-version:             0.1.0.0
+version:             0.1.0.1
 synopsis:            Grab RSS feeds from the interweb and tweet their content, a-la TwitterFeed (soon to be RIP)
 description:         Please see README.md
 homepage:            https://github.com/ciderpunx/rsstwit

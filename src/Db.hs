@@ -14,6 +14,7 @@ module Db ( allFeeds
           , feedsToUpdate
           , initDb
           , listFeeds
+          , setPause
           , showFeed
           , tweetables
           , updateFeed
@@ -52,6 +53,7 @@ Feed
     checkEvery Int
     nextCheck UTCTime
     firstRun Bool
+    paused Bool
     UniqueURI uri
     deriving Show
 Entry
@@ -97,11 +99,13 @@ showFeed id = do
       putStrLn $ "Check every: " ++ show (feedCheckEvery f) ++ " minutes"
       putStrLn $ "Next check : " ++ show (feedNextCheck f) ++ " (UTC)"
       putStrLn $ "First run? : " ++ show (feedFirstRun f)
+      putStrLn $ "Paused?    : " ++ show (feedPaused f)
       putStrLn ""
 
 listFeeds :: IO ()
 listFeeds = do
     dbname <- dbName
+    print dbname
     runSqlite dbname $ do
       fs <- allFeeds
       if null fs
@@ -119,11 +123,11 @@ listFeeds = do
                        ++ ") Next check: "
                        ++ show (feedNextCheck fv)
 
--- Finds the feeds that need updadting
+-- Finds the feeds that need updating
 feedsToUpdate :: SqlPersistM [Entity Feed]
 feedsToUpdate = do
     now <- liftIO getCurrentTime
-    selectList [FeedNextCheck <=. now] []
+    selectList [FeedNextCheck <=. now, FeedPaused ==. False] []
 
 createFeed :: Feed -> IO (Key Feed)
 createFeed f = do
@@ -136,6 +140,13 @@ deleteFeed fid = do
     runSqlite dbname $ do
       delete fid::SqlPersistM ()
       deleteWhere [EntryFeedId  ==. fid ] :: SqlPersistM ()
+      return ()
+
+setPause :: Key Feed -> Bool -> IO ()
+setPause fk b = do
+    dbname <- dbName
+    runSqlite dbname $ do
+      _ <- update fk [ FeedPaused =. b] :: SqlPersistM ()
       return ()
 
 -- Given a feed entity, fetch its entries, fetch the feed,
@@ -242,4 +253,5 @@ egFeed =
          1
          30
          (UTCTime (fromGregorian 2016 10 20) 1200)
+         False
          False

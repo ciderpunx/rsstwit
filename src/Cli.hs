@@ -22,12 +22,14 @@ import Config
 
 opts :: Parser (IO ())
 opts = subparser
-    ( command "delete" (info (delFeed <$> argument str idm) idm)
-   <> command "add"    (info (pure addFeed) idm)
-   <> command "show"   (info (showFeed <$> argument str idm) idm)
-   <> command "list"   (info (pure listFeeds) idm)
-   <> command "cron"   (info (pure cronRun) idm)
-   <> command "init"   (info (pure initDb) idm)
+    ( command "delete"  (info (delFeed <$> argument str idm) idm)
+   <> command "add"     (info (pure addFeed) idm)
+   <> command "show"    (info (showFeed <$> argument str idm) idm)
+   <> command "pause"   (info (pauseFeed <$> argument str idm) idm)
+   <> command "unpause" (info (unpauseFeed <$> argument str idm) idm)
+   <> command "list"    (info (pure listFeeds) idm)
+   <> command "cron"    (info (pure cronRun) idm)
+   <> command "init"    (info (pure initDb) idm)
     )
 
 main :: IO ()
@@ -36,6 +38,14 @@ main = join $ execParser (info opts idm)
 delFeed :: String -> IO ()
 delFeed n =
     deleteFeed $ toSqlKey (read n :: Int64)
+
+pauseFeed :: String -> IO ()
+pauseFeed n =
+    setPause (toSqlKey (read n :: Int64)) True
+
+unpauseFeed :: String -> IO ()
+unpauseFeed n =
+    setPause (toSqlKey (read n :: Int64)) False
 
 cronRun :: IO ()
 cronRun = do
@@ -76,6 +86,7 @@ addFeed = do
                      (checkEvery * 60)
                      now  -- will be checked on next cron run
                      True  -- this is our first run, mark it so
+                     False -- never pause new feeds
               putStrLn "Feed created, will start tweeting when the next cron job runs."
               return ()
       else do putStr "Give up? (Q for quit anything else to try again): "
