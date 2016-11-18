@@ -23,10 +23,11 @@ module Db ( allFeeds
           ) where
 
 import Control.Monad.Extra (concatMapM)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Logger (NoLoggingT)
+import Control.Monad.IO.Class (liftIO,MonadIO)
+import Control.Monad.Logger -- (runLoggingT, LoggingT, runNoLoggingT, NoLoggingT, runStderrLoggingT)
 import Control.Monad.Reader (ReaderT)
-import Control.Monad.Trans.Resource.Internal (ResourceT)
+import Control.Monad.Trans.Control (MonadBaseControl)
+import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import Data.Int (Int64)
 import Data.Time
 import Data.Time.Format
@@ -34,10 +35,16 @@ import Database.Persist
 import Database.Persist.Sqlite
 import Database.Persist.TH
 import System.IO
+import System.Log.FastLogger -- (ToLogStr (toLogStr), LogStr (..))
+import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text as T
+import qualified Data.ByteString.Char8 as S8
+
 
 import Config
 import FetchFeed
+
+type SqlPersistML = ReaderT SqlBackend (LoggingT (ResourceT IO))
 
 share [ mkPersist sqlSettings
       , mkMigrate "migrateAll"
@@ -67,10 +74,10 @@ Entry
     deriving Show
 |]
 
---initDb :: IO ()
+initDb :: IO ()
 initDb = do
     dbname <- dbName
-    runSqlite dbname $ do
+    runSqliteLogged ":memory:" $ do
       _ <- doMigrations
       liftIO $ putStrLn "Initialized database"
 
@@ -239,9 +246,49 @@ tweetables f = do
   where
     (+++) = T.append
 
-doMigrations :: SqlPersistM ()
+--doMigrations :: SqlPersistM ()
+doMigrations :: SqlPersistML ()
 doMigrations =
     runMigration migrateAll
+
+-- Log sql statements to file as we go along
+runSqliteLogged :: (MonadBaseControl IO m, MonadIO m)
+          => T.Text                                 -- ^ connection string
+          -> SqlPersistT (LoggingT (ResourceT m)) a -- ^ database action
+          -> m a
+runSqliteLogged connstr action = do
+    lp <- liftIO logPath
+    logFile <- liftIO $ openFile (T.unpack lp) AppendMode
+    ma <- runResourceT
+         . (`runLoggingT` formatOutput logFile)
+         . withSqliteConn connstr
+         $ runSqlConn action
+    liftIO $ hClose logFile
+    return ma
+
+-- this is pretty much just borrowed from the impl of defaultOutput 
+-- in Control.Monad.Logger
+formatOutput :: Handle
+              -> Loc
+              -> LogSource
+              -> LogLevel
+              -> LogStr
+              -> IO ()
+formatOutput h loc src level msg =
+    S8.hPutStrLn h $ S8.concat bs
+  where
+    bs =
+        [ S8.pack "["
+        , case level of
+            LevelOther t -> encodeUtf8 t
+            _ -> encodeUtf8 $ T.pack $ drop 5 $ show level
+        , if T.null src
+            then S8.empty
+            else encodeUtf8 $ '#' `T.cons` src
+        , S8.pack "] "
+        , fromLogStr msg
+        , S8.pack "\n"
+        ]
 
 -- can be used for testing
 egFeed :: Feed

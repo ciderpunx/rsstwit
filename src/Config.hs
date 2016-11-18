@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Config ( maxEntries
+module Config ( logName
+              , maxEntries
               , shortUrlLength
               , dbName
               , getTwinfo
@@ -46,6 +47,14 @@ dbName = do
     let dbDef = joinPath [confdir, dbFilename]
     dn <- lookupDefault dbFallbackFile c (T.pack "dbName")
     return . T.pack $ if dn == dbFallbackFile then dn else joinPath [confdir, dn]
+
+-- Debug log file, defaults to /dev/null
+logName :: IO T.Text
+logName = do
+    c <- config
+    confdir <- getAppUserDataDirectory "rsstwit"
+    ln <- lookupDefault "/dev/null" c (T.pack "logName")
+    return . T.pack $ joinPath [confdir, ln]
 
 -- Maximum allowed number of entries in a feed
 maxEntries :: IO Int
@@ -105,6 +114,9 @@ defaultConfigString =
             , ""
             , "# Name for your database"
             , "dbName = \"rsstwit.sqlite\""
+            , ""
+            , "# Name for your log file (default is /dev/null)"
+            , "logName =\"debug.log\""
             , ""
             , "# Max number of feed entries to fetch when the cronjob runs"
             , "maxEntries = 10"

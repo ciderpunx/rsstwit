@@ -26,11 +26,13 @@ library
                      , configurator
                      , directory
                      , extra
+                     , fast-logger
                      , filepath
                      , http-conduit
                      , monad-logger
                      , lens
                      , mtl
+                     , monad-control
                      , optparse-applicative
                      , persistent
                      , persistent-sqlite
@@ -51,10 +53,12 @@ executable rsstwit
                      , rsstwit
                      , bytestring
                      , extra
+                     , fast-logger
                      , http-conduit
                      , monad-logger
                      , lens
                      , mtl
+                     , monad-control
                      , optparse-applicative
                      , persistent
                      , persistent-sqlite
