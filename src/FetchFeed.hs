@@ -79,12 +79,18 @@ rssToPostable item =
       link    = sHead $ item $/ laxElement "link" &/ content
       title   = sHead $ item $/ laxElement "title" &/ content
       pubdate = sHead $ item $/ laxElement "pubDate" &/ content
+      dcdate  = sHead $ item $/ laxElement "date" &/ content -- a list apart uses dc:date instead of pubDate
     in
-      case (link, title, pubdate) of
-        (Just l, Just t, Just p) ->
+      case (link, title, pubdate, dcdate) of
+        (Just l, Just t, Just p, _) ->
             Just Postable { link    = l
                           , title   = t
                           , pubDate = p
+                          }
+        (Just l, Just t, _, Just d) ->
+            Just Postable { link    = l
+                          , title   = t
+                          , pubDate = d
                           }
         _ -> Nothing
 
