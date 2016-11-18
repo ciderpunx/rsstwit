@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Config ( logName
+module Config ( logPath
               , maxEntries
               , shortUrlLength
               , dbName
@@ -49,12 +49,13 @@ dbName = do
     return . T.pack $ if dn == dbFallbackFile then dn else joinPath [confdir, dn]
 
 -- Debug log file, defaults to /dev/null
-logName :: IO T.Text
-logName = do
+-- TODO: Windows should default to NUL, other systems?
+logPath :: IO T.Text
+logPath = do
     c <- config
     confdir <- getAppUserDataDirectory "rsstwit"
     ln <- lookupDefault "/dev/null" c (T.pack "logName")
-    return . T.pack $ joinPath [confdir, ln]
+    return $ T.pack ln
 
 -- Maximum allowed number of entries in a feed
 maxEntries :: IO Int
@@ -115,8 +116,9 @@ defaultConfigString =
             , "# Name for your database"
             , "dbName = \"rsstwit.sqlite\""
             , ""
-            , "# Name for your log file (default is /dev/null)"
-            , "logName =\"debug.log\""
+            , "# Name for your log file (defaults to /dev/null)"
+            , "# note that this should be an absolute path"
+            , "# logPath =\"/var/log/rsstwit.log\""
             , ""
             , "# Max number of feed entries to fetch when the cronjob runs"
             , "maxEntries = 10"

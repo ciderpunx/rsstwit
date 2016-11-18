@@ -14,6 +14,7 @@ module Db ( allFeeds
           , feedsToUpdate
           , initDb
           , listFeeds
+          , runSqliteLogged
           , setPause
           , showFeed
           , tweetables
@@ -39,7 +40,6 @@ import System.Log.FastLogger -- (ToLogStr (toLogStr), LogStr (..))
 import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text as T
 import qualified Data.ByteString.Char8 as S8
-
 
 import Config
 import FetchFeed
@@ -77,19 +77,19 @@ Entry
 initDb :: IO ()
 initDb = do
     dbname <- dbName
-    runSqliteLogged ":memory:" $ do
+    runSqliteLogged dbname $ do
       _ <- doMigrations
       liftIO $ putStrLn "Initialized database"
 
-allFeeds :: SqlPersistM [Entity Feed]
+allFeeds :: SqlPersistML [Entity Feed]
 allFeeds =
     selectList [] []
 
 showFeed :: String -> IO ()
 showFeed id = do
     dbname <- dbName
-    runSqlite dbname $ do
-      feed <- get (toSqlKey (read id) :: Key Feed) :: SqlPersistM (Maybe Feed)
+    runSqliteLogged dbname $ do
+      feed <- get (toSqlKey (read id) :: Key Feed) :: SqlPersistML (Maybe Feed)
       case feed of
         Nothing -> liftIO . putStrLn $ "Can't show feed with id: " ++ show id
         Just f  -> liftIO $ display f
@@ -112,8 +112,7 @@ showFeed id = do
 listFeeds :: IO ()
 listFeeds = do
     dbname <- dbName
-    print dbname
-    runSqlite dbname $ do
+    runSqliteLogged dbname $ do
       fs <- allFeeds
       if null fs
       then liftIO $ putStrLn "No feeds yet use 'rsstwit add' to create one."
@@ -131,7 +130,7 @@ listFeeds = do
                        ++ show (feedNextCheck fv)
 
 -- Finds the feeds that need updating
-feedsToUpdate :: SqlPersistM [Entity Feed]
+feedsToUpdate :: SqlPersistML [Entity Feed]
 feedsToUpdate = do
     now <- liftIO getCurrentTime
     selectList [FeedNextCheck <=. now, FeedPaused ==. False] []
@@ -139,21 +138,21 @@ feedsToUpdate = do
 createFeed :: Feed -> IO (Key Feed)
 createFeed f = do
     dbname <- dbName
-    runSqlite dbname (insert f :: SqlPersistM (Key Feed))
+    runSqliteLogged dbname (insert f :: SqlPersistML (Key Feed))
 
 deleteFeed :: Key Feed -> IO ()
 deleteFeed fid = do
     dbname <- dbName
-    runSqlite dbname $ do
-      delete fid::SqlPersistM ()
-      deleteWhere [EntryFeedId  ==. fid ] :: SqlPersistM ()
+    runSqliteLogged dbname $ do
+      delete fid::SqlPersistML ()
+      deleteWhere [EntryFeedId  ==. fid ] :: SqlPersistML ()
       return ()
 
 setPause :: Key Feed -> Bool -> IO ()
 setPause fk b = do
     dbname <- dbName
-    runSqlite dbname $ do
-      _ <- update fk [ FeedPaused =. b] :: SqlPersistM ()
+    runSqliteLogged dbname $ do
+      _ <- update fk [ FeedPaused =. b] :: SqlPersistML ()
       return ()
 
 -- Given a feed entity, fetch its entries, fetch the feed,
@@ -166,7 +165,7 @@ setPause fk b = do
 --              Links are used for comparison rather than ids which are often
 --              absent from feeds in the wild. But it will fuck up if the same 
 --              link is in the feed more than once.
-updateFeed :: Entity Feed -> SqlPersistM [Key Entry]
+updateFeed :: Entity Feed -> SqlPersistML [Key Entry]
 updateFeed f = do
     postables <- liftIO $ fetchFeed (feedUri (entityVal f))
     case postables of
@@ -195,7 +194,7 @@ updateFeed f = do
 
 -- Given a feed and a postable, insert a new Entry, with 0 tweeted, feed id set
 -- the link, title and pubDate from the postable, retrieved set to now
-createEntry :: Entity Feed -> Postable -> SqlPersistM (Key Entry)
+createEntry :: Entity Feed -> Postable -> SqlPersistML (Key Entry)
 createEntry f p = do
     now <- liftIO getCurrentTime
     insert $ Entry (entityKey f) -- entryFeedId
@@ -205,11 +204,11 @@ createEntry f p = do
                    False         -- entryTweeted
                    True          -- entrySkip
 
-wasTweeted :: Key Entry -> SqlPersistM ()
+wasTweeted :: Key Entry -> SqlPersistML ()
 wasTweeted ek =
     update ek [EntryTweeted =. True]
 
-seenLinks :: [Postable] -> Key Feed -> SqlPersistM [T.Text]
+seenLinks :: [Postable] -> Key Feed -> SqlPersistML [T.Text]
 seenLinks ls fk = do
       xs <- selectList
                  [ EntryFeedId ==. fk
@@ -218,7 +217,7 @@ seenLinks ls fk = do
       return $ map (entryLink . entityVal) xs
 
 -- Given a feed, find tweetable entries and return formatted tweet texts
-tweetables :: Entity Feed -> SqlPersistM [(Key Entry,T.Text)]
+tweetables :: Entity Feed -> SqlPersistML [(Key Entry,T.Text)]
 tweetables f = do
     ul <- liftIO shortUrlLength
     let fv   = entityVal f
@@ -246,7 +245,7 @@ tweetables f = do
   where
     (+++) = T.append
 
---doMigrations :: SqlPersistM ()
+--doMigrations :: SqlPersistML ()
 doMigrations :: SqlPersistML ()
 doMigrations =
     runMigration migrateAll

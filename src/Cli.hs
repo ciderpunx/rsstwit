@@ -47,10 +47,12 @@ unpauseFeed :: String -> IO ()
 unpauseFeed n =
     setPause (toSqlKey (read n :: Int64)) False
 
+-- TODO: It can't be right that this knows about 
+-- runSqlite -- that should be in Db.hs. REFACTOR!
 cronRun :: IO ()
 cronRun = do
   dbname <- dbName
-  runSqlite dbname $ do
+  runSqliteLogged dbname $ do
     fsToUpdate <- feedsToUpdate
     mapM_ updateFeed fsToUpdate
     af <- allFeeds -- any feed may have tweetable entries
